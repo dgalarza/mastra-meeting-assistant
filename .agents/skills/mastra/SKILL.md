@@ -29,9 +29,9 @@ ls node_modules/@mastra/
 - **If packages exist:** Use embedded docs first (most reliable)
 - **If no packages:** Install first or use remote docs
 
-## Documentation lookup guide
+## Available files
 
-### Quick Reference
+### References
 
 | User Question                       | First Check                                                      | How To                                         |
 | ----------------------------------- | ---------------------------------------------------------------- | ---------------------------------------------- |
@@ -41,7 +41,11 @@ ls node_modules/@mastra/
 | "I'm getting an error..."           | [`references/common-errors.md`](references/common-errors.md)     | Common errors and solutions                    |
 | "Upgrade from v0.x to v1.x"         | [`references/migration-guide.md`](references/migration-guide.md) | Version upgrade workflows                      |
 
-### Priority order for writing code
+### Scripts
+
+- `scripts/provider-registry.mjs`: Look up current providers and models available in the model router. Always run this before using a model to verify provider keys and model names.
+
+## Priority order for writing code
 
 ⚠️ Never write code without checking current docs first.
 
@@ -55,7 +59,7 @@ ls node_modules/@mastra/
 
    - **Why:** Matches your EXACT installed version
    - **Most reliable source of truth**
-   - **See:** [`references/embedded-docs.md`](references/embedded-docs.md)
+   - **More information:** [`references/embedded-docs.md`](references/embedded-docs.md)
 
 2. **Source code second** (if packages installed)
 
@@ -71,7 +75,7 @@ ls node_modules/@mastra/
 
    - **Why:** Ultimate source of truth if docs are missing or unclear
    - **Use when:** Embedded docs don't cover your question
-   - **See:** [`references/embedded-docs.md`](references/embedded-docs.md)
+   - **More information:** [`references/embedded-docs.md`](references/embedded-docs.md)
 
 3. **Remote docs third** (if packages not installed)
 
@@ -83,7 +87,7 @@ ls node_modules/@mastra/
 
    - **Why:** Latest published docs (may be ahead of installed version)
    - **Use when:** Packages not installed or exploring new features
-   - **See:** [`references/remote-docs.md`](references/remote-docs.md)
+   - **More information:** [`references/remote-docs.md`](references/remote-docs.md)
 
 ## Core concepts
 
@@ -98,9 +102,21 @@ Use for: Defined processes (pipelines, approvals, ETL)
 ### Key components
 
 - **Tools**: Extend agent capabilities (APIs, databases, external services)
-- **Memory**: Maintain context (message history, working memory, semantic recall)
+- **Memory**: Maintain context (message history, working memory, semantic recall, observational memory)
 - **RAG**: Query external knowledge (vector stores, graph relationships)
 - **Storage**: Persist data (Postgres, LibSQL, MongoDB)
+
+### Mastra Studio
+
+Studio provides an interactive UI for building, testing, and managing agents, workflows, and tools. It helps with debugging and improving your applications iteratively.
+
+Inside a Mastra project, run:
+
+```bash
+npm run dev
+```
+
+Then open `http://localhost:4111` in your browser to access Mastra Studio.
 
 ## Critical requirements
 
@@ -120,9 +136,24 @@ Mastra requires **ES2022 modules**. CommonJS will fail.
 
 ### Model format
 
-Always use `"provider/model-name"`:
+Always use `"provider/model-name"` when defining models using Mastra's model router.
 
-- `"openai/gpt-5.2"`
+Use the provider registry script to look up available providers and models:
+
+```bash
+# List all available providers
+node scripts/provider-registry.mjs --list
+
+# List all models for a specific provider (sorted newest first)
+node scripts/provider-registry.mjs --provider openai
+node scripts/provider-registry.mjs --provider anthropic
+```
+
+When the user asks to use a model or provider, **always run the script first** to verify the provider key and model name are valid. Do not guess model names from memory as they change frequently.
+
+Example model strings:
+
+- `"openai/gpt-5.4"`
 - `"anthropic/claude-sonnet-4-5"`
 - `"google/gemini-2.5-pro"`
 
