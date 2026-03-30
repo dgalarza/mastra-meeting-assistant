@@ -1,29 +1,57 @@
 import { Agent } from "@mastra/core/agent";
 import { Memory } from "@mastra/memory";
+import { Workspace, LocalFilesystem, LocalSandbox } from '@mastra/core/workspace'
+import { embedV3 as embed } from "@mastra/core/vector";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { LibSQLVector } from "@mastra/libsql";
 import { fastembed } from "@mastra/fastembed";
 import { searchWeb } from "../tools/research-tools";
 
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const workspacePath = resolve(__dirname, "../../workspace");
+
+const workspaceVectorStore = new LibSQLVector({
+  id: 'libsql-vector',
+  url: process.env.DATABASE_URL ?? `file:${resolve(workspacePath, 'workspace.db')}`,
+})
+
+const workspace = new Workspace({
+  id: 'meeting-assistant',
+  filesystem: new LocalFilesystem({ basePath: workspacePath }),
+  sandbox: new LocalSandbox({ workingDirectory: workspacePath }),
+  skills: ['./skills'],
+  bm25: true,
+  vectorStore: workspaceVectorStore,
+  embedder: async (text: string) => {
+    const { embedding } = await embed({ model: fastembed, value: text });
+    return embedding;
+  },
+  autoIndexPaths: ['vault/**/*.md'],
+})
+
+// Create the vector index table, then initialize workspace to trigger auto-indexing
+workspaceVectorStore.createIndex({
+  indexName: 'meeting_assistant_search',
+  dimension: 384,
+  metric: 'cosine',
+})
+
 export const meetingAssistant = new Agent({
   id: "meeting-assistant",
+  workspace: workspace,
   name: "Meeting Assistant",
+  model: "anthropic/claude-sonnet-4-5",
   instructions: `
-    You are a personal meeting assistant. Your job is to help your user prepare for
-    meetings by researching the people they're meeting with and providing concise,
-    actionable briefs.
+    You are a personal meeting assistant with access to an Obsidian vault of notes.
 
-    When given information about an upcoming meeting:
-    - Research the person and their company
-    - Summarize who they are, what they do, and why the meeting matters
-    - Highlight any talking points or areas of mutual interest
-    - Keep briefs concise and scannable — bullet points over paragraphs
+    When asked to prepare for a meeting, use the meeting-prep skill.
 
     When chatting casually:
     - Be helpful, direct, and low-friction
     - Remember context from previous conversations
     - If you don't know something, say so — don't make things up
   `,
-  model: "anthropic/claude-sonnet-4-5",
   tools: { searchWeb },
   memory: new Memory({
     // Vector store for semantic recall — stores message embeddings
