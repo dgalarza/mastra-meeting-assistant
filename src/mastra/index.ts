@@ -3,6 +3,7 @@ import { PinoLogger } from "@mastra/loggers";
 import { LibSQLStore } from "@mastra/libsql";
 import { registerApiRoute } from "@mastra/core/server";
 import { meetingAssistant } from "./agents/meeting-assistant";
+import { observability } from "./observability";
 import { bot } from "../chat";
 import { initScheduler, scheduleTask, registerTaskHandler } from "../scheduler";
 
@@ -22,6 +23,7 @@ export const mastra = new Mastra({
     id: "mastra-storage",
     url: "file:./mastra.db",
   }),
+  observability,
   logger: new PinoLogger({
     name: "Mastra",
     level: "info",
