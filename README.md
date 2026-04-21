@@ -2,7 +2,11 @@
 
 A personal AI assistant that preps you for every meeting — built with [Mastra](https://mastra.ai/), the TypeScript framework for AI agents.
 
-This is the companion repo for the YouTube video: **Build a Personal AI Assistant That Actually Works**. Follow along to build an agent that researches your meeting attendees, posts briefs to Slack, and schedules follow-ups — all automatically.
+This repo is the companion codebase for a three-part YouTube series:
+
+1. **Build a Personal AI Assistant That Actually Works** — the foundation (agent, tools, memory, Slack + Cal.com webhooks)
+2. **I Gave My AI Agent Access to My Second Brain** — Mastra Workspaces, filesystem + hybrid search over an Obsidian vault
+3. **The Quality Loop Your AI Agent Is Missing** — observability + a custom LLM-as-judge scorer, all inside Mastra Studio
 
 Need help building AI agents for your team? [Learn about my coaching and AI engineering services](https://www.damiangalarza.com/ai-agents/?utm_source=github&utm_medium=readme&utm_campaign=meeting-assistant).
 
@@ -14,6 +18,7 @@ Need help building AI agents for your team? [Learn about my coaching and AI engi
 4. You chat with the agent in-thread to ask follow-up questions
 5. After the meeting ends, it reminds you to follow up
 6. Over time, it learns your preferences through memory
+7. When given a meeting transcript, it extracts grounded action items (with a scorer watching for hallucinations)
 
 ```mermaid
 sequenceDiagram
@@ -148,6 +153,44 @@ stateDiagram-v2
 
 The [Chat SDK](https://chat-sdk.dev/) provides a platform-agnostic interface for bot communication. The Slack adapter handles event subscriptions, threading, and typing indicators.
 
+### Observability
+
+`src/mastra/observability.ts` configures Mastra's built-in tracing. Every agent run, tool call, model call, memory operation, and workspace operation produces a span. Traces are visible in Mastra Studio's Observability tab.
+
+```ts
+import { Observability, DefaultExporter } from "@mastra/observability";
+
+export const observability = new Observability({
+  configs: {
+    default: {
+      serviceName: "mastra",
+      exporters: [new DefaultExporter()],
+    },
+  },
+});
+```
+
+The `DefaultExporter` persists traces to the same LibSQL store Mastra already uses — no extra infrastructure. If you want to ship traces to an external platform, Mastra supports [OpenTelemetry exporters](https://mastra.ai/docs/observability/tracing/exporters/otel) for anywhere that speaks OTel.
+
+### Action Item Extraction
+
+`src/mastra/tools/extract-action-items.ts` is a tool wired into the meeting assistant that takes a meeting transcript and returns a structured list of action items. It delegates to a focused sub-agent (`src/mastra/agents/action-item-extractor.ts`) so the extraction prompt can iterate independently from the main assistant's instructions.
+
+A sample transcript lives at `fixtures/transcripts/coaching-call.md`.
+
+### Custom Scorer (LLM-as-Judge)
+
+`src/mastra/scorers/action-item-groundedness.ts` is a custom scorer that evaluates whether each extracted action item is *grounded* in the source transcript — i.e., whether a participant actually committed to the task, as opposed to the agent inferring or fabricating it.
+
+The scorer follows Mastra's `preprocess → analyze → generateScore → generateReason` pattern:
+
+- **preprocess** pulls the transcript (user message) and action items (parsed from the assistant's structured JSON output) from the agent run
+- **analyze** asks a Claude Sonnet judge to score each item 0 or 1 and justify the call
+- **generateScore** returns the mean
+- **generateReason** surfaces a human-readable explanation of which items failed and why
+
+The scorer is attached to the extractor agent with `sampling: { type: "ratio", rate: 1 }` so every run is graded. Scores show up in Mastra Studio's Scorers tab.
+
 ## Getting Started
 
 ### Prerequisites
@@ -218,16 +261,26 @@ Mastra Studio is now running at [http://localhost:4111](http://localhost:4111). 
 ```
 src/
 ├── mastra/
-│   ├── index.ts                 # Mastra config, webhooks, scheduler setup
+│   ├── index.ts                       # Mastra config, webhooks, scheduler setup
+│   ├── observability.ts               # Tracing config (DefaultExporter → Studio)
 │   ├── agents/
-│   │   └── meeting-assistant.ts # Agent definition with memory + tools
-│   └── tools/
-│       └── research-tools.ts    # Exa web search tool
-├── chat.ts                      # Slack bot via Chat SDK
-├── scheduler.ts                 # Polling task scheduler
+│   │   ├── meeting-assistant.ts       # Main agent: memory + tools + workspace
+│   │   └── action-item-extractor.ts   # Focused sub-agent for extraction
+│   ├── tools/
+│   │   ├── research-tools.ts          # Exa web search tool
+│   │   └── extract-action-items.ts    # Extraction tool (delegates to extractor)
+│   └── scorers/
+│       └── action-item-groundedness.ts # LLM-as-judge scorer
+├── chat.ts                            # Slack bot via Chat SDK
+├── scheduler.ts                       # Polling task scheduler
 └── db/
-    ├── index.ts                 # Drizzle database connection
-    └── schema.ts                # scheduled_tasks table schema
+    ├── index.ts                       # Drizzle database connection
+    └── schema.ts                      # scheduled_tasks table schema
+fixtures/
+└── transcripts/
+    └── coaching-call.md               # Sample transcript for the eval demo
+skills/
+└── meeting-prep/                      # Workspace skill used by the main agent
 ```
 
 ## Scripts
