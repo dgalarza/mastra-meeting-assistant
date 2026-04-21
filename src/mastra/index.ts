@@ -4,6 +4,7 @@ import { LibSQLStore } from "@mastra/libsql";
 import { registerApiRoute } from "@mastra/core/server";
 import { meetingAssistant } from "./agents/meeting-assistant";
 import { actionItemExtractor } from "./agents/action-item-extractor";
+import { actionItemGroundedness } from "./scorers/action-item-groundedness";
 import { observability } from "./observability";
 import { bot } from "../chat";
 import { initScheduler, scheduleTask, registerTaskHandler } from "../scheduler";
@@ -20,6 +21,7 @@ registerTaskHandler("follow-up", async (payload) => {
 
 export const mastra = new Mastra({
   agents: { meetingAssistant, actionItemExtractor },
+  scorers: { actionItemGroundedness },
   storage: new LibSQLStore({
     id: "mastra-storage",
     url: "file:./mastra.db",

@@ -1,4 +1,5 @@
 import { Agent } from "@mastra/core/agent";
+import { actionItemGroundedness } from "../scorers/action-item-groundedness";
 
 // v1 prompt — intentionally underspecified.
 // We'll tighten this after the eval surfaces what it misses.
@@ -9,4 +10,10 @@ export const actionItemExtractor = new Agent({
   name: "Action Item Extractor",
   model: "anthropic/claude-sonnet-4-5",
   instructions: V1_INSTRUCTIONS,
+  scorers: {
+    groundedness: {
+      scorer: actionItemGroundedness,
+      sampling: { type: "ratio", rate: 1 },
+    },
+  },
 });
