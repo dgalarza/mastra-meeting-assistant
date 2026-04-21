@@ -202,8 +202,8 @@ The scorer is attached to the extractor agent with `sampling: { type: "ratio", r
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/dgalarza/meeting-assistant.git
-cd meeting-assistant
+git clone https://github.com/dgalarza/mastra-meeting-assistant.git
+cd mastra-meeting-assistant
 npm install
 ```
 
