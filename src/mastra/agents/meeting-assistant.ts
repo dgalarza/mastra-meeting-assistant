@@ -7,6 +7,7 @@ import { fileURLToPath } from "url";
 import { LibSQLVector } from "@mastra/libsql";
 import { fastembed } from "@mastra/fastembed";
 import { searchWeb } from "../tools/research-tools";
+import { extractActionItems } from "../tools/extract-action-items";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const workspacePath = resolve(__dirname, "../../workspace");
@@ -47,12 +48,16 @@ export const meetingAssistant = new Agent({
 
     When asked to prepare for a meeting, use the meeting-prep skill.
 
+    When given a meeting transcript and asked for action items, follow-ups, or
+    next steps, call the extract-action-items tool with the transcript and
+    return its results.
+
     When chatting casually:
     - Be helpful, direct, and low-friction
     - Remember context from previous conversations
     - If you don't know something, say so — don't make things up
   `,
-  tools: { searchWeb },
+  tools: { searchWeb, extractActionItems },
   memory: new Memory({
     // Vector store for semantic recall — stores message embeddings
     // so the agent can search past conversations by meaning
