@@ -8,6 +8,7 @@ import { LibSQLVector } from "@mastra/libsql";
 import { fastembed } from "@mastra/fastembed";
 import { searchWeb } from "../tools/research-tools";
 import { extractActionItems } from "../tools/extract-action-items";
+import { sendMockEmail } from "../tools/send-mock-email";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const workspacePath = resolve(__dirname, "../../workspace");
@@ -57,7 +58,7 @@ export const meetingAssistant = new Agent({
     - Remember context from previous conversations
     - If you don't know something, say so — don't make things up
   `,
-  tools: { searchWeb, extractActionItems },
+  tools: { searchWeb, extractActionItems, sendMockEmail },
   memory: new Memory({
     // Vector store for semantic recall — stores message embeddings
     // so the agent can search past conversations by meaning
