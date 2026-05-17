@@ -19,13 +19,13 @@
   "dependencies": {
     "@chat-adapter/slack": "^4.15.0",
     "@chat-adapter/state-memory": "^4.15.0",
-    "@mastra/core": "^1.25.0",
-    "@mastra/evals": "^1.2.1",
+    "@mastra/core": "^1.35.0",
+    "@mastra/evals": "^1.2.2",
     "@mastra/fastembed": "^1.0.1",
-    "@mastra/libsql": "^1.8.1",
+    "@mastra/libsql": "^1.11.0",
     "@mastra/loggers": "^1.1.1",
-    "@mastra/memory": "^1.15.1",
-    "@mastra/observability": "^1.9.1",
+    "@mastra/memory": "^1.18.2",
+    "@mastra/observability": "^1.12.0",
     "chat": "^4.15.0",
     "drizzle-orm": "^0.45.1",
     "exa-js": "^2.6.1",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@types/node": "^25.3.3",
     "drizzle-kit": "^0.31.9",
-    "mastra": "^1.6.0",
+    "mastra": "^1.9.3",
     "typescript": "^5.9.3"
   }
 }
