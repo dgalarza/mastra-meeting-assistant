@@ -10,6 +10,8 @@ This repo is the companion codebase for a three-part YouTube series:
 
 Need help building AI agents for your team? [Learn about my coaching and AI engineering services](https://www.damiangalarza.com/ai-agents/?utm_source=github&utm_medium=readme&utm_campaign=meeting-assistant).
 
+The repo also includes a small human-in-the-loop demo: a mock email tool that uses Mastra's approval flow before the agent can complete the send.
+
 ## What It Does
 
 1. Someone books a call on [Cal.com](https://refer.cal.com/dgalarza-ucac)*
@@ -19,6 +21,7 @@ Need help building AI agents for your team? [Learn about my coaching and AI engi
 5. After the meeting ends, it reminds you to follow up
 6. Over time, it learns your preferences through memory
 7. When given a meeting transcript, it extracts grounded action items (with a scorer watching for hallucinations)
+8. When asked to send an email, it can pause on an approval-gated mock tool before writing the result to a local outbox file
 
 ```mermaid
 sequenceDiagram
@@ -106,6 +109,16 @@ graph LR
     Tool -->|calls| Exa[Exa API]
     Exa -->|returns| Results[Titles, URLs, Text]
 ```
+
+### Approval-Gated Email Demo
+
+The repo includes a `send-mock-email` tool (`src/mastra/tools/send-mock-email.ts`) for demonstrating human-in-the-loop approvals with a side-effecting action.
+
+- The tool uses `requireApproval: true`, so Mastra pauses before the tool executes.
+- Approved sends are written to `workspace/mock-outbox/sent-emails.jsonl`.
+- No real email provider is called, which keeps the demo safe and easy to inspect on camera.
+
+If you try a prompt like `Send Priya a follow-up email recapping our meeting`, you should see the tool call pause in Mastra Studio until you approve it.
 
 ### Memory (Three Layers)
 
